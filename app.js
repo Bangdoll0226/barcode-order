@@ -2,6 +2,7 @@
 
 import * as storage from "./storage.js";
 import * as csv from "./csv.js";
+import * as gmail from "./gmail.js";
 
 function renderOrderList() {
   const listEl = document.getElementById("order-list");
@@ -398,6 +399,100 @@ function toggleSupplierMaster() {
   if (!sec.hidden) renderSupplierMaster();
 }
 
+// --- 認証 UI ---
+
+function renderAuthStatus() {
+  const emailEl = document.getElementById("auth-email");
+  const signinBtn = document.getElementById("signin-btn");
+  const signoutBtn = document.getElementById("signout-btn");
+  const token = gmail.getToken();
+  if (gmail.isSignedIn()) {
+    emailEl.textContent = token.email || "ログイン中";
+    signinBtn.hidden = true;
+    signoutBtn.hidden = false;
+  } else {
+    emailEl.textContent = "未ログイン";
+    signinBtn.hidden = false;
+    signoutBtn.hidden = true;
+  }
+}
+
+// --- メール送信 ---
+
+function buildEmailHtml(groupedOrder, suppliers) {
+  const supplierIndex = Object.fromEntries(suppliers.map(s => [s.name, s]));
+  const sections = Object.entries(groupedOrder).map(([supplierName, lines]) => {
+    const s = supplierIndex[supplierName] || { name: supplierName, url: "" };
+    const items = lines.map(l =>
+      `<li>${escapeHtml(l.name)} × ${l.quantity}</li>`
+    ).join("");
+    const link = s.url
+      ? `<p><a href="${escapeHtml(s.url)}">${escapeHtml(s.name)}で発注</a></p>`
+      : "";
+    return `
+      <h3>■ ${escapeHtml(supplierName)}（${lines.length}件）</h3>
+      <ul>${items}</ul>
+      ${link}
+    `;
+  }).join("");
+  return `<html><body style="font-family: sans-serif;">
+    <p>発注リストをお送りします。</p>
+    ${sections}
+  </body></html>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+function buildSubject(date = new Date()) {
+  const y = date.getFullYear();
+  const mo = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const h = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+  return `発注リスト ${y}-${mo}-${d} ${h}:${mi}`;
+}
+
+async function handleSendEmail() {
+  const order = storage.getOrder();
+  if (order.length === 0) return;
+
+  try {
+    if (!gmail.isSignedIn()) {
+      await gmail.signIn();
+      renderAuthStatus();
+    }
+
+    const token = gmail.getToken();
+    if (!token?.email) throw new Error("送信元メールアドレスが取得できません");
+
+    const grouped = csv.groupBySupplier(order);
+    const suppliers = storage.getSuppliers();
+    const now = new Date();
+
+    const attachments = Object.entries(grouped).map(([supplierName, lines]) => ({
+      filename: csv.generateFilename(supplierName, now),
+      content: csv.generateCsv(lines),
+    }));
+
+    await gmail.sendMail({
+      to: token.email,
+      subject: buildSubject(now),
+      htmlBody: buildEmailHtml(grouped, suppliers),
+      attachments,
+    });
+
+    storage.clearOrder();
+    renderOrderList();
+    showToast("メールを送信しました。発注リストをクリアしました");
+  } catch (e) {
+    showToast(`送信失敗: ${e.message}`);
+  }
+}
+
 function wireActions() {
   document.getElementById("clear-order-btn").addEventListener("click", () => {
     if (storage.getOrder().length === 0) return;
@@ -429,10 +524,27 @@ function wireActions() {
       showToast(e.message);
     }
   });
+
+  document.getElementById("signin-btn").addEventListener("click", async () => {
+    try {
+      await gmail.signIn();
+      renderAuthStatus();
+      showToast("ログインしました");
+    } catch (e) {
+      showToast(`ログイン失敗: ${e.message}`);
+    }
+  });
+  document.getElementById("signout-btn").addEventListener("click", () => {
+    gmail.signOut();
+    renderAuthStatus();
+    showToast("ログアウトしました");
+  });
+  document.getElementById("send-email-btn").addEventListener("click", handleSendEmail);
 }
 
 function init() {
   wireActions();
+  renderAuthStatus();
   renderOrderList();
 }
 
