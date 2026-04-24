@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>barcode-order tests</title>
+</head>
+<body>
+  <h1>barcode-order tests</h1>
+  <p>Open DevTools Console to see results.</p>
+  <pre id="out"></pre>
+
+  <script type="module">
+    import * as storage from "./storage.js";
+
+    const out = document.getElementById("out");
+    let passed = 0, failed = 0;
+
+    function log(msg, ok) {
+      const line = `${ok ? "✓" : "✗"} ${msg}`;
+      out.textContent += line + "\n";
+      if (ok) console.log(line); else console.error(line);
+    }
+    function assertEq(actual, expected, name) {
+      const a = JSON.stringify(actual), e = JSON.stringify(expected);
+      if (a === e) { log(name, true); passed++; }
+      else { log(`${name} — expected ${e}, got ${a}`, false); failed++; }
+    }
+    function clearStorage() {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith("barcode-order:"))
+        .forEach(k => localStorage.removeItem(k));
+    }
+
+    // --- products ---
+    clearStorage();
+    assertEq(storage.getProducts(), {}, "products: empty by default");
+
+    storage.saveProduct("4901234567890", { name: "アルコール綿 100包", defaultSupplier: "アスクル" });
+    assertEq(
+      storage.getProducts(),
+      { "4901234567890": { name: "アルコール綿 100包", defaultSupplier: "アスクル" } },
+      "products: saveProduct then getProducts"
+    );
+
+    assertEq(
+      storage.getProduct("4901234567890"),
+      { name: "アルコール綿 100包", defaultSupplier: "アスクル" },
+      "products: getProduct by jan"
+    );
+    assertEq(storage.getProduct("nosuch"), null, "products: getProduct returns null for unknown");
+
+    storage.deleteProduct("4901234567890");
+    assertEq(storage.getProducts(), {}, "products: deleteProduct");
+
+    out.textContent += `\n${passed} passed, ${failed} failed\n`;
+  </script>
+</body>
+</html>
