@@ -78,7 +78,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .modal input, .modal select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
 .modal .buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .radio-group { display: flex; flex-direction: column; gap: 4px; }
-.radio-group label { display: flex; align-items: center; gap: 6px; font-weight: normal; }
+.radio-group label { display: flex; align-items: center; gap: 6px; font-weight: normal; margin: 0; }
+.radio-group input[type="radio"] { width: auto; padding: 0; border: none; border-radius: 0; flex: 0 0 auto; }
 
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
