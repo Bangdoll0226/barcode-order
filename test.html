@@ -11,6 +11,7 @@
 
   <script type="module">
     import * as storage from "./storage.js";
+    import * as csv from "./csv.js";
 
     const out = document.getElementById("out");
     let passed = 0, failed = 0;
@@ -154,6 +155,47 @@
     clearStorage();
     storage.addOrderLine({ barcode: "1", name: "x", supplier: "Amazon" });
     assertEq(storage.isSupplierInUse("Amazon"), true, "supplier in use: by order line");
+
+    // --- csv ---
+    const orderLines = [
+      { id: "a", barcode: "1", name: "アルコール綿 100包", quantity: 3, supplier: "アスクル" },
+      { id: "b", barcode: "2", name: "コピー用紙,A4", quantity: 2, supplier: "アスクル" },
+      { id: "c", barcode: "3", name: "手袋 M", quantity: 4, supplier: "シンリョウ" },
+    ];
+    const grouped = csv.groupBySupplier(orderLines);
+    assertEq(Object.keys(grouped).sort(), ["アスクル", "シンリョウ"], "csv: groupBySupplier keys");
+    assertEq(grouped["アスクル"].length, 2, "csv: groupBySupplier askul has 2");
+    assertEq(grouped["シンリョウ"].length, 1, "csv: groupBySupplier shinryo has 1");
+
+    const text = csv.generateCsv(grouped["アスクル"]);
+    // 先頭は BOM
+    assertEq(text.charCodeAt(0), 0xFEFF, "csv: starts with UTF-8 BOM");
+    // ヘッダ + 2行 = 3行（最終行末に CRLF）
+    const body = text.slice(1);
+    assertEq(
+      body,
+      "品名,数量,JANコード\r\n" +
+      "アルコール綿 100包,3,1\r\n" +
+      "\"コピー用紙,A4\",2,2\r\n",
+      "csv: generateCsv content with comma-escaping"
+    );
+
+    // ダブルクオート含む品名
+    const q = csv.generateCsv([{ name: "彼は\"A\"と言った", quantity: 1, barcode: "9" }]);
+    assertEq(
+      q.slice(1),
+      "品名,数量,JANコード\r\n" +
+      "\"彼は\"\"A\"\"と言った\",1,9\r\n",
+      "csv: generateCsv escapes double quote"
+    );
+
+    // ファイル名
+    const d = new Date("2026-04-24T10:05:00+09:00");
+    assertEq(
+      csv.generateFilename("アスクル", d),
+      "order-アスクル-20260424-1005.csv",
+      "csv: generateFilename format"
+    );
 
     out.textContent += `\n${passed} passed, ${failed} failed\n`;
   </script>
