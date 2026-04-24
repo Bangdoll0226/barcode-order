@@ -204,6 +204,56 @@ function handleScannedBarcode(jan) {
   }
 }
 
+// --- カメラスキャナ制御 ---
+
+let scanner = null;
+let lastScanned = { barcode: null, at: 0 };
+
+async function startScanner() {
+  const containerId = "scanner";
+  const container = document.getElementById(containerId);
+  container.hidden = false;
+
+  if (!window.Html5Qrcode) {
+    showToast("スキャナライブラリの読み込みに失敗しました");
+    return;
+  }
+  if (scanner) {
+    await stopScanner();
+  }
+  scanner = new Html5Qrcode(containerId);
+  try {
+    await scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 260, height: 130 } },
+      onScanSuccess,
+      () => {} // onScanFailure: ignore
+    );
+  } catch (e) {
+    showToast("カメラを起動できませんでした。ブラウザの権限を確認してください。");
+    container.hidden = true;
+  }
+}
+
+async function stopScanner() {
+  if (!scanner) return;
+  try { await scanner.stop(); } catch {}
+  try { scanner.clear(); } catch {}
+  scanner = null;
+  document.getElementById("scanner").hidden = true;
+}
+
+function onScanSuccess(decoded) {
+  // 1.5 秒デバウンスで同一コードの連続検出を抑制
+  const now = Date.now();
+  if (decoded === lastScanned.barcode && (now - lastScanned.at) < 1500) return;
+  lastScanned = { barcode: decoded, at: now };
+
+  // 検出したら自動停止（ユーザー操作で次のスキャンを開始）
+  stopScanner();
+  handleScannedBarcode(decoded);
+}
+
 function wireActions() {
   document.getElementById("clear-order-btn").addEventListener("click", () => {
     if (storage.getOrder().length === 0) return;
@@ -213,6 +263,10 @@ function wireActions() {
     }
   });
   document.getElementById("scan-manual-btn").addEventListener("click", openManualBarcodeModal);
+  document.getElementById("scan-start-btn").addEventListener("click", async () => {
+    if (scanner) await stopScanner();
+    else await startScanner();
+  });
 }
 
 function init() {
