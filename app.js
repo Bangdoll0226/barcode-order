@@ -308,6 +308,96 @@ function toggleProductMaster() {
   if (!sec.hidden) renderProductMaster();
 }
 
+// --- 発注先マスタ管理 ---
+
+function renderSupplierMaster() {
+  const listEl = document.getElementById("supplier-master-list");
+  const suppliers = storage.getSuppliers();
+
+  listEl.innerHTML = "";
+  suppliers.forEach((s, i) => {
+    const row = document.createElement("div");
+    row.className = "master-line";
+    row.innerHTML = `
+      <div>
+        <input data-field="name" type="text" />
+        <input data-field="url" type="url" placeholder="URL（任意）" />
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button type="button" data-act="up">↑</button>
+        <button type="button" data-act="down">↓</button>
+      </div>
+      <button type="button" data-act="del">削除</button>
+    `;
+    const nameInput = row.querySelector('[data-field="name"]');
+    const urlInput = row.querySelector('[data-field="url"]');
+    nameInput.value = s.name;
+    urlInput.value = s.url || "";
+
+    const commit = () => {
+      const newName = nameInput.value.trim();
+      const newUrl = urlInput.value.trim();
+      if (!newName) {
+        showToast("発注先名は必須です");
+        nameInput.value = s.name;
+        return;
+      }
+      try {
+        storage.updateSupplier(s.name, { name: newName, url: newUrl });
+        if (newName !== s.name) propagateSupplierRename(s.name, newName);
+        renderSupplierMaster();
+        renderOrderList();
+      } catch (e) {
+        showToast(e.message);
+        nameInput.value = s.name;
+        urlInput.value = s.url || "";
+      }
+    };
+    nameInput.addEventListener("change", commit);
+    urlInput.addEventListener("change", commit);
+
+    row.querySelector('[data-act="up"]').addEventListener("click", () => {
+      storage.moveSupplier(s.name, -1);
+      renderSupplierMaster();
+    });
+    row.querySelector('[data-act="down"]').addEventListener("click", () => {
+      storage.moveSupplier(s.name, +1);
+      renderSupplierMaster();
+    });
+    row.querySelector('[data-act="del"]').addEventListener("click", () => {
+      if (storage.isSupplierInUse(s.name)) {
+        showToast(`「${s.name}」は商品マスタ or 発注リストで使用中のため削除できません`);
+        return;
+      }
+      if (!confirm(`発注先「${s.name}」を削除しますか？`)) return;
+      storage.removeSupplier(s.name);
+      renderSupplierMaster();
+    });
+    listEl.appendChild(row);
+  });
+}
+
+function propagateSupplierRename(oldName, newName) {
+  const products = storage.getProducts();
+  for (const [jan, p] of Object.entries(products)) {
+    if (p.defaultSupplier === oldName) {
+      storage.saveProduct(jan, { ...p, defaultSupplier: newName });
+    }
+  }
+  const order = storage.getOrder();
+  for (const line of order) {
+    if (line.supplier === oldName) {
+      storage.updateLine(line.id, { supplier: newName });
+    }
+  }
+}
+
+function toggleSupplierMaster() {
+  const sec = document.getElementById("supplier-master");
+  sec.hidden = !sec.hidden;
+  if (!sec.hidden) renderSupplierMaster();
+}
+
 function wireActions() {
   document.getElementById("clear-order-btn").addEventListener("click", () => {
     if (storage.getOrder().length === 0) return;
@@ -322,6 +412,23 @@ function wireActions() {
     else await startScanner();
   });
   document.getElementById("manage-products-btn").addEventListener("click", toggleProductMaster);
+  document.getElementById("manage-suppliers-btn").addEventListener("click", toggleSupplierMaster);
+
+  document.getElementById("add-supplier-btn").addEventListener("click", () => {
+    const nameEl = document.getElementById("new-supplier-name");
+    const urlEl = document.getElementById("new-supplier-url");
+    const name = nameEl.value.trim();
+    const url = urlEl.value.trim();
+    if (!name) { showToast("発注先名を入力してください"); return; }
+    try {
+      storage.addSupplier({ name, url });
+      nameEl.value = "";
+      urlEl.value = "";
+      renderSupplierMaster();
+    } catch (e) {
+      showToast(e.message);
+    }
+  });
 }
 
 function init() {
