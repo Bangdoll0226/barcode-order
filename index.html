@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>バーコード発注</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script src="https://accounts.google.com/gsi/client" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1>バーコード発注</h1>
+    <div id="auth-status" class="auth-status">
+      <span id="auth-email">未ログイン</span>
+      <button id="signin-btn" type="button">ログイン</button>
+      <button id="signout-btn" type="button" hidden>ログアウト</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="scan-section">
+      <button id="scan-start-btn" type="button">スキャン開始</button>
+      <button id="scan-manual-btn" type="button">手動入力</button>
+      <div id="scanner" class="scanner" hidden></div>
+    </section>
+
+    <section class="order-section">
+      <h2>発注リスト <span id="order-count">0件</span></h2>
+      <div id="order-list" class="order-list"></div>
+      <div id="order-empty" class="empty">リストは空です。バーコードをスキャンしてください。</div>
+    </section>
+
+    <section class="actions-section">
+      <button id="send-email-btn" type="button" disabled>メール送信</button>
+      <button id="clear-order-btn" type="button">リストをクリア</button>
+      <button id="manage-products-btn" type="button">商品マスタを管理</button>
+      <button id="manage-suppliers-btn" type="button">発注先マスタを管理</button>
+    </section>
+
+    <section id="product-master" class="master-section" hidden>
+      <h2>商品マスタ</h2>
+      <div id="product-master-list"></div>
+    </section>
+
+    <section id="supplier-master" class="master-section" hidden>
+      <h2>発注先マスタ</h2>
+      <div id="supplier-master-list"></div>
+      <div class="supplier-add-form">
+        <input id="new-supplier-name" type="text" placeholder="発注先名" />
+        <input id="new-supplier-url" type="url" placeholder="URL（任意）" />
+        <button id="add-supplier-btn" type="button">追加</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal-root"></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
