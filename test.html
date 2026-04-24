@@ -52,6 +52,58 @@
     storage.deleteProduct("4901234567890");
     assertEq(storage.getProducts(), {}, "products: deleteProduct");
 
+    // --- suppliers ---
+    clearStorage();
+    // 初回取得時は 4 つのデフォルトが入っている
+    const defaults = storage.getSuppliers();
+    assertEq(
+      defaults.map(s => s.name),
+      ["アスクル", "カウネット", "Amazon", "シンリョウ"],
+      "suppliers: default list on first load"
+    );
+    assertEq(
+      defaults.find(s => s.name === "シンリョウ").url,
+      "https://www.shinryo.jp/",
+      "suppliers: default shinryo url"
+    );
+
+    // 追加
+    storage.addSupplier({ name: "その他", url: "" });
+    assertEq(
+      storage.getSuppliers().map(s => s.name),
+      ["アスクル", "カウネット", "Amazon", "シンリョウ", "その他"],
+      "suppliers: addSupplier appends"
+    );
+
+    // 重複追加はエラー
+    let threw = false;
+    try { storage.addSupplier({ name: "アスクル", url: "" }); } catch { threw = true; }
+    assertEq(threw, true, "suppliers: addSupplier throws on duplicate name");
+
+    // 名前・URLの変更
+    storage.updateSupplier("その他", { name: "自社", url: "" });
+    assertEq(
+      storage.getSuppliers().find(s => s.name === "自社").name,
+      "自社",
+      "suppliers: updateSupplier renames"
+    );
+
+    // 並び替え（上へ）
+    storage.moveSupplier("Amazon", -1);
+    assertEq(
+      storage.getSuppliers().map(s => s.name),
+      ["アスクル", "Amazon", "カウネット", "シンリョウ", "自社"],
+      "suppliers: moveSupplier up"
+    );
+
+    // 削除
+    storage.removeSupplier("自社");
+    assertEq(
+      storage.getSuppliers().map(s => s.name),
+      ["アスクル", "Amazon", "カウネット", "シンリョウ"],
+      "suppliers: removeSupplier"
+    );
+
     out.textContent += `\n${passed} passed, ${failed} failed\n`;
   </script>
 </body>
