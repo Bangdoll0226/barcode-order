@@ -3,7 +3,7 @@
 import * as storage from "./storage.js";
 import { GOOGLE_OAUTH_CLIENT_ID } from "./config.js";
 
-const SCOPE = "https://www.googleapis.com/auth/gmail.send";
+const SCOPE = "https://www.googleapis.com/auth/gmail.send email";
 const TOKEN_KEY_GMAIL = "barcode-order:gmail_token";
 
 // --- token helpers ---
