@@ -1,0 +1,9 @@
+{
+  "name": "バーコード発注",
+  "short_name": "発注",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#1f6feb",
+  "icons": []
+}
