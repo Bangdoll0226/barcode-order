@@ -88,6 +88,80 @@ function renderOrderList() {
   }
 }
 
+// --- modal 基盤 ---
+
+function openModal(contentHTML, setup) {
+  const root = document.getElementById("modal-root");
+  root.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal">${contentHTML}</div>
+    </div>
+  `;
+  const backdrop = root.querySelector(".modal-backdrop");
+  const modal = root.querySelector(".modal");
+  const close = () => { root.innerHTML = ""; };
+  backdrop.addEventListener("click", e => { if (e.target === backdrop) close(); });
+  if (setup) setup(modal, close);
+  return close;
+}
+
+function showToast(msg, ms = 2500) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.hidden = false;
+  setTimeout(() => { el.hidden = true; }, ms);
+}
+
+// --- 手動 JAN 入力 ---
+
+function openManualBarcodeModal() {
+  openModal(`
+    <h3>JANコードを入力</h3>
+    <label>JANコード（8桁または13桁の数字）</label>
+    <input id="manual-jan" type="text" inputmode="numeric" autofocus />
+    <div class="buttons">
+      <button type="button" data-act="cancel">キャンセル</button>
+      <button type="button" class="primary" data-act="ok">確定</button>
+    </div>
+  `, (modal, close) => {
+    const input = modal.querySelector("#manual-jan");
+    modal.querySelector('[data-act="cancel"]').addEventListener("click", close);
+    modal.querySelector('[data-act="ok"]').addEventListener("click", () => {
+      const jan = input.value.trim();
+      if (!/^\d{8}$|^\d{13}$/.test(jan)) {
+        showToast("JANコードは 8 桁または 13 桁の数字で入力してください");
+        return;
+      }
+      close();
+      handleScannedBarcode(jan);
+    });
+  });
+}
+
+// --- バーコード受け取り（後続タスクで拡張） ---
+
+function handleScannedBarcode(jan) {
+  const product = storage.getProduct(jan);
+  if (product) {
+    const existing = storage.findLineByBarcode(jan);
+    if (existing) {
+      storage.incrementQuantity(jan);
+      showToast(`「${product.name}」を +1 しました`);
+    } else {
+      storage.addOrderLine({
+        barcode: jan,
+        name: product.name,
+        supplier: product.defaultSupplier,
+      });
+      showToast(`「${product.name}」をリストに追加しました`);
+    }
+    renderOrderList();
+  } else {
+    // タスク 9 で未登録商品モーダルを開く
+    showToast(`未登録の商品です（${jan}）。タスク 9 で登録モーダルを実装します`);
+  }
+}
+
 function wireActions() {
   document.getElementById("clear-order-btn").addEventListener("click", () => {
     if (storage.getOrder().length === 0) return;
@@ -96,6 +170,7 @@ function wireActions() {
       renderOrderList();
     }
   });
+  document.getElementById("scan-manual-btn").addEventListener("click", openManualBarcodeModal);
 }
 
 function init() {
