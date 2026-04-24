@@ -3,7 +3,7 @@
 import * as storage from "./storage.js";
 import { GOOGLE_OAUTH_CLIENT_ID } from "./config.js";
 
-const SCOPE = "https://www.googleapis.com/auth/gmail.send email";
+const SCOPE = "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email";
 const TOKEN_KEY_GMAIL = "barcode-order:gmail_token";
 
 // --- token helpers ---
@@ -57,8 +57,12 @@ export function signIn() {
         const r = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
           headers: { Authorization: `Bearer ${access_token}` },
         });
-        if (r.ok) email = (await r.json()).email || "";
-      } catch {}
+        const body = await r.json();
+        console.log("[gmail.js] userinfo response:", r.status, body);
+        if (r.ok) email = body.email || "";
+      } catch (err) {
+        console.error("[gmail.js] userinfo fetch failed:", err);
+      }
       const token = { access_token, expires_at, email };
       saveToken(token);
       resolve(token);
