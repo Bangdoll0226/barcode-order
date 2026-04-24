@@ -104,6 +104,57 @@
       "suppliers: removeSupplier"
     );
 
+    // --- order ---
+    clearStorage();
+    assertEq(storage.getOrder(), [], "order: empty by default");
+
+    storage.addOrderLine({
+      barcode: "4901234567890",
+      name: "アルコール綿 100包",
+      supplier: "アスクル",
+    });
+    const order1 = storage.getOrder();
+    assertEq(order1.length, 1, "order: addOrderLine adds one");
+    assertEq(order1[0].quantity, 1, "order: new line starts at quantity 1");
+    assertEq(typeof order1[0].id, "string", "order: new line has id");
+
+    // 同じ JAN を incrementQuantity
+    storage.incrementQuantity("4901234567890");
+    assertEq(storage.getOrder()[0].quantity, 2, "order: incrementQuantity by jan");
+
+    // findLineByBarcode
+    const line = storage.findLineByBarcode("4901234567890");
+    assertEq(line.name, "アルコール綿 100包", "order: findLineByBarcode");
+    assertEq(storage.findLineByBarcode("nosuch"), null, "order: findLineByBarcode null for unknown");
+
+    // 数量を特定値に設定
+    storage.updateLine(line.id, { quantity: 5 });
+    assertEq(storage.getOrder()[0].quantity, 5, "order: updateLine quantity");
+
+    // 発注先変更
+    storage.updateLine(line.id, { supplier: "シンリョウ" });
+    assertEq(storage.getOrder()[0].supplier, "シンリョウ", "order: updateLine supplier");
+
+    // 削除
+    storage.removeLine(line.id);
+    assertEq(storage.getOrder(), [], "order: removeLine");
+
+    // clearOrder
+    storage.addOrderLine({ barcode: "1", name: "x", supplier: "アスクル" });
+    storage.addOrderLine({ barcode: "2", name: "y", supplier: "アスクル" });
+    storage.clearOrder();
+    assertEq(storage.getOrder(), [], "order: clearOrder");
+
+    // --- 発注先が使用中かどうか ---
+    clearStorage();
+    storage.saveProduct("4901234567890", { name: "x", defaultSupplier: "アスクル" });
+    assertEq(storage.isSupplierInUse("アスクル"), true, "supplier in use: by product master");
+    assertEq(storage.isSupplierInUse("カウネット"), false, "supplier not in use");
+
+    clearStorage();
+    storage.addOrderLine({ barcode: "1", name: "x", supplier: "Amazon" });
+    assertEq(storage.isSupplierInUse("Amazon"), true, "supplier in use: by order line");
+
     out.textContent += `\n${passed} passed, ${failed} failed\n`;
   </script>
 </body>

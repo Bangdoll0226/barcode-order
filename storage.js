@@ -88,3 +88,64 @@ export function moveSupplier(name, delta) {
   suppliers.splice(newIdx, 0, item);
   writeJson(KEYS.suppliers, suppliers);
 }
+
+// --- 発注リスト（[{id, barcode, name, quantity, supplier, addedAt}]） ---
+function newId() {
+  if (crypto?.randomUUID) return crypto.randomUUID();
+  return "id-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
+}
+
+export function getOrder() {
+  return readJson(KEYS.order, []);
+}
+
+export function addOrderLine({ barcode, name, supplier }) {
+  const order = getOrder();
+  order.push({
+    id: newId(),
+    barcode,
+    name,
+    quantity: 1,
+    supplier,
+    addedAt: new Date().toISOString(),
+  });
+  writeJson(KEYS.order, order);
+}
+
+export function findLineByBarcode(barcode) {
+  return getOrder().find(l => l.barcode === barcode) ?? null;
+}
+
+export function incrementQuantity(barcode) {
+  const order = getOrder();
+  const line = order.find(l => l.barcode === barcode);
+  if (!line) return;
+  line.quantity += 1;
+  writeJson(KEYS.order, order);
+}
+
+export function updateLine(id, patch) {
+  const order = getOrder();
+  const line = order.find(l => l.id === id);
+  if (!line) return;
+  Object.assign(line, patch);
+  writeJson(KEYS.order, order);
+}
+
+export function removeLine(id) {
+  const order = getOrder().filter(l => l.id !== id);
+  writeJson(KEYS.order, order);
+}
+
+export function clearOrder() {
+  writeJson(KEYS.order, []);
+}
+
+// --- 発注先が商品マスタ or 発注リストで使われているか ---
+export function isSupplierInUse(name) {
+  const products = getProducts();
+  if (Object.values(products).some(p => p.defaultSupplier === name)) return true;
+  const order = getOrder();
+  if (order.some(l => l.supplier === name)) return true;
+  return false;
+}
