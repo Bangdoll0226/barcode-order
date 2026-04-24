@@ -138,7 +138,50 @@ function openManualBarcodeModal() {
   });
 }
 
-// --- バーコード受け取り（後続タスクで拡張） ---
+// --- 未登録商品の登録モーダル ---
+
+function openUnknownProductModal(jan) {
+  const suppliers = storage.getSuppliers();
+  const radios = suppliers.map((s, i) =>
+    `<label><input type="radio" name="mod-sup" value="${encodeURIComponent(s.name)}" ${i === 0 ? "checked" : ""}> ${s.name}</label>`
+  ).join("");
+
+  openModal(`
+    <h3>新しい商品の登録</h3>
+    <p style="font-size: 12px; color: #666;">JANコード: ${jan}</p>
+    <label>品名</label>
+    <input id="mod-name" type="text" autofocus />
+    <label>発注先</label>
+    <div class="radio-group">${radios}</div>
+    <div class="buttons">
+      <button type="button" data-act="cancel">キャンセル</button>
+      <button type="button" class="primary" data-act="ok" disabled>登録して追加</button>
+    </div>
+  `, (modal, close) => {
+    const nameInput = modal.querySelector("#mod-name");
+    const okBtn = modal.querySelector('[data-act="ok"]');
+
+    nameInput.addEventListener("input", () => {
+      okBtn.disabled = nameInput.value.trim().length === 0;
+    });
+
+    modal.querySelector('[data-act="cancel"]').addEventListener("click", close);
+    okBtn.addEventListener("click", () => {
+      const name = nameInput.value.trim();
+      const radio = modal.querySelector('input[name="mod-sup"]:checked');
+      if (!name || !radio) return;
+      const supplier = decodeURIComponent(radio.value);
+
+      storage.saveProduct(jan, { name, defaultSupplier: supplier });
+      storage.addOrderLine({ barcode: jan, name, supplier });
+      close();
+      showToast(`「${name}」を登録してリストに追加しました`);
+      renderOrderList();
+    });
+  });
+}
+
+// --- バーコード受け取り ---
 
 function handleScannedBarcode(jan) {
   const product = storage.getProduct(jan);
@@ -157,8 +200,7 @@ function handleScannedBarcode(jan) {
     }
     renderOrderList();
   } else {
-    // タスク 9 で未登録商品モーダルを開く
-    showToast(`未登録の商品です（${jan}）。タスク 9 で登録モーダルを実装します`);
+    openUnknownProductModal(jan);
   }
 }
 
