@@ -254,6 +254,60 @@ function onScanSuccess(decoded) {
   handleScannedBarcode(decoded);
 }
 
+// --- 商品マスタ管理 ---
+
+function renderProductMaster() {
+  const listEl = document.getElementById("product-master-list");
+  const products = storage.getProducts();
+  const suppliers = storage.getSuppliers();
+  const entries = Object.entries(products);
+
+  if (entries.length === 0) {
+    listEl.innerHTML = '<div class="empty">登録された商品はありません。</div>';
+    return;
+  }
+
+  listEl.innerHTML = "";
+  for (const [jan, p] of entries) {
+    const row = document.createElement("div");
+    row.className = "master-line";
+    row.innerHTML = `
+      <div>
+        <div style="font-weight: 600;"></div>
+        <div style="font-size: 11px; color: #777;"></div>
+      </div>
+      <select></select>
+      <button type="button" data-act="del">削除</button>
+    `;
+    row.children[0].children[0].textContent = p.name;
+    row.children[0].children[1].textContent = jan;
+    const sel = row.querySelector("select");
+    for (const s of suppliers) {
+      const opt = document.createElement("option");
+      opt.value = s.name;
+      opt.textContent = s.name;
+      if (s.name === p.defaultSupplier) opt.selected = true;
+      sel.appendChild(opt);
+    }
+    sel.addEventListener("change", e => {
+      storage.saveProduct(jan, { ...p, defaultSupplier: e.target.value });
+    });
+    row.querySelector('[data-act="del"]').addEventListener("click", () => {
+      if (confirm(`「${p.name}」を商品マスタから削除しますか？`)) {
+        storage.deleteProduct(jan);
+        renderProductMaster();
+      }
+    });
+    listEl.appendChild(row);
+  }
+}
+
+function toggleProductMaster() {
+  const sec = document.getElementById("product-master");
+  sec.hidden = !sec.hidden;
+  if (!sec.hidden) renderProductMaster();
+}
+
 function wireActions() {
   document.getElementById("clear-order-btn").addEventListener("click", () => {
     if (storage.getOrder().length === 0) return;
@@ -267,6 +321,7 @@ function wireActions() {
     if (scanner) await stopScanner();
     else await startScanner();
   });
+  document.getElementById("manage-products-btn").addEventListener("click", toggleProductMaster);
 }
 
 function init() {
