@@ -28,11 +28,11 @@ export function generateCsv(orderLines) {
 
 function pad2(n) { return String(n).padStart(2, "0"); }
 
-export function generateFilename(supplier, date = new Date()) {
+export function generateFilename(store, supplier, date = new Date()) {
   const y = date.getFullYear();
   const m = pad2(date.getMonth() + 1);
   const d = pad2(date.getDate());
   const h = pad2(date.getHours());
   const mi = pad2(date.getMinutes());
-  return `order-${supplier}-${y}${m}${d}-${h}${mi}.csv`;
+  return `order-${store}-${supplier}-${y}${m}${d}-${h}${mi}.csv`;
 }

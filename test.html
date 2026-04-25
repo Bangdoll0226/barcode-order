@@ -217,12 +217,12 @@
       "csv: generateCsv escapes double quote"
     );
 
-    // ファイル名
+    // ファイル名（store, supplier, date の順）
     const d = new Date("2026-04-24T10:05:00+09:00");
     assertEq(
-      csv.generateFilename("アスクル", d),
-      "order-アスクル-20260424-1005.csv",
-      "csv: generateFilename format"
+      csv.generateFilename("A店", "アスクル", d),
+      "order-A店-アスクル-20260424-1005.csv",
+      "csv: generateFilename format with store"
     );
 
     out.textContent += `\n${passed} passed, ${failed} failed\n`;
