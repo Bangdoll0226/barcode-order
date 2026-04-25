@@ -91,7 +91,7 @@ function renderOrderList() {
 
 // --- modal 基盤 ---
 
-function openModal(contentHTML, setup) {
+function openModal(contentHTML, setup, { closeOnBackdrop = true } = {}) {
   const root = document.getElementById("modal-root");
   root.innerHTML = `
     <div class="modal-backdrop">
@@ -101,7 +101,9 @@ function openModal(contentHTML, setup) {
   const backdrop = root.querySelector(".modal-backdrop");
   const modal = root.querySelector(".modal");
   const close = () => { root.innerHTML = ""; };
-  backdrop.addEventListener("click", e => { if (e.target === backdrop) close(); });
+  if (closeOnBackdrop) {
+    backdrop.addEventListener("click", e => { if (e.target === backdrop) close(); });
+  }
   if (setup) setup(modal, close);
   return close;
 }
@@ -407,6 +409,74 @@ function renderStoreHeader() {
   btn.textContent = current ? `🏪 ${current}` : "🏪 店舗未設定";
 }
 
+function openStoreSelectionModal({ required = false } = {}) {
+  const stores = storage.getStores();
+  const hasStores = stores.length > 0;
+
+  let bodyHtml;
+  if (hasStores) {
+    const radios = stores.map((s, i) =>
+      `<label><input type="radio" name="store-pick" value="${encodeURIComponent(s.name)}" ${i === 0 ? "checked" : ""}> ${s.name}</label>`
+    ).join("");
+    bodyHtml = `
+      <h3>店舗を選択してください</h3>
+      <div class="radio-group">${radios}</div>
+      <div class="buttons">
+        ${required ? "" : '<button type="button" data-act="cancel">キャンセル</button>'}
+        <button type="button" class="primary" data-act="ok">この店舗で使う</button>
+      </div>
+    `;
+  } else {
+    bodyHtml = `
+      <h3>最初の店舗名を入力してください</h3>
+      <p style="font-size: 12px; color: #666;">あとから店舗マスタで追加・変更できます。</p>
+      <label>店舗名</label>
+      <input id="first-store-name" type="text" autofocus />
+      <div class="buttons">
+        ${required ? "" : '<button type="button" data-act="cancel">キャンセル</button>'}
+        <button type="button" class="primary" data-act="ok" disabled>登録して使う</button>
+      </div>
+    `;
+  }
+
+  openModal(bodyHtml, (modal, close) => {
+    if (!required) {
+      modal.querySelector('[data-act="cancel"]')?.addEventListener("click", close);
+    }
+
+    if (hasStores) {
+      modal.querySelector('[data-act="ok"]').addEventListener("click", () => {
+        const radio = modal.querySelector('input[name="store-pick"]:checked');
+        if (!radio) return;
+        const name = decodeURIComponent(radio.value);
+        storage.setCurrentStore(name);
+        close();
+        renderStoreHeader();
+        showToast(`店舗を「${name}」に切り替えました`);
+      });
+    } else {
+      const nameInput = modal.querySelector("#first-store-name");
+      const okBtn = modal.querySelector('[data-act="ok"]');
+      nameInput.addEventListener("input", () => {
+        okBtn.disabled = nameInput.value.trim().length === 0;
+      });
+      okBtn.addEventListener("click", () => {
+        const name = nameInput.value.trim();
+        if (!name) return;
+        try {
+          storage.addStore({ name });
+          storage.setCurrentStore(name);
+          close();
+          renderStoreHeader();
+          showToast(`店舗「${name}」を登録しました`);
+        } catch (e) {
+          showToast(e.message);
+        }
+      });
+    }
+  }, { closeOnBackdrop: !required });
+}
+
 // --- 認証 UI ---
 
 function renderAuthStatus() {
@@ -555,6 +625,9 @@ function init() {
   renderStoreHeader();
   renderAuthStatus();
   renderOrderList();
+  if (storage.getCurrentStore() === null) {
+    openStoreSelectionModal({ required: true });
+  }
 }
 
 document.addEventListener("DOMContentLoaded", init);
