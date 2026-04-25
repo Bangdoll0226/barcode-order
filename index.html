@@ -11,7 +11,10 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>バーコード発注</h1>
+    <div class="header-titles">
+      <h1>バーコード発注</h1>
+      <button id="store-display" class="store-display" type="button">🏪 店舗未設定</button>
+    </div>
     <div id="auth-status" class="auth-status">
       <span id="auth-email">未ログイン</span>
       <button id="signin-btn" type="button">ログイン</button>
@@ -37,6 +40,7 @@
       <button id="clear-order-btn" type="button">リストをクリア</button>
       <button id="manage-products-btn" type="button">商品マスタを管理</button>
       <button id="manage-suppliers-btn" type="button">発注先マスタを管理</button>
+      <button id="manage-stores-btn" type="button">店舗マスタを管理</button>
     </section>
 
     <section id="product-master" class="master-section" hidden>
@@ -51,6 +55,15 @@
         <input id="new-supplier-name" type="text" placeholder="発注先名" />
         <input id="new-supplier-url" type="url" placeholder="URL（任意）" />
         <button id="add-supplier-btn" type="button">追加</button>
+      </div>
+    </section>
+
+    <section id="store-master" class="master-section" hidden>
+      <h2>店舗マスタ</h2>
+      <div id="store-master-list"></div>
+      <div class="supplier-add-form">
+        <input id="new-store-name" type="text" placeholder="店舗名" />
+        <button id="add-store-btn" type="button">追加</button>
       </div>
     </section>
   </main>
