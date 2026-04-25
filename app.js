@@ -605,7 +605,7 @@ function renderAuthStatus() {
 
 // --- メール送信 ---
 
-function buildEmailHtml(groupedOrder, suppliers) {
+function buildEmailHtml(groupedOrder, suppliers, storeName) {
   const supplierIndex = Object.fromEntries(suppliers.map(s => [s.name, s]));
   const sections = Object.entries(groupedOrder).map(([supplierName, lines]) => {
     const s = supplierIndex[supplierName] || { name: supplierName, url: "" };
@@ -622,7 +622,7 @@ function buildEmailHtml(groupedOrder, suppliers) {
     `;
   }).join("");
   return `<html><body style="font-family: sans-serif;">
-    <p>発注リストをお送りします。</p>
+    <p>${escapeHtml(storeName)} からの発注リストをお送りします。</p>
     ${sections}
   </body></html>`;
 }
@@ -633,18 +633,24 @@ function escapeHtml(s) {
   }[c]));
 }
 
-function buildSubject(date = new Date()) {
+function buildSubject(date, storeName) {
   const y = date.getFullYear();
   const mo = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   const h = String(date.getHours()).padStart(2, "0");
   const mi = String(date.getMinutes()).padStart(2, "0");
-  return `発注リスト ${y}-${mo}-${d} ${h}:${mi}`;
+  return `[${storeName}] 発注リスト ${y}-${mo}-${d} ${h}:${mi}`;
 }
 
 async function handleSendEmail() {
   const order = storage.getOrder();
   if (order.length === 0) return;
+
+  const storeName = storage.getCurrentStore();
+  if (!storeName) {
+    showToast("店舗が選択されていません");
+    return;
+  }
 
   try {
     if (!gmail.isSignedIn()) {
@@ -660,14 +666,14 @@ async function handleSendEmail() {
     const now = new Date();
 
     const attachments = Object.entries(grouped).map(([supplierName, lines]) => ({
-      filename: csv.generateFilename(supplierName, now),
+      filename: csv.generateFilename(storeName, supplierName, now),
       content: csv.generateCsv(lines),
     }));
 
     await gmail.sendMail({
       to: token.email,
-      subject: buildSubject(now),
-      htmlBody: buildEmailHtml(grouped, suppliers),
+      subject: buildSubject(now, storeName),
+      htmlBody: buildEmailHtml(grouped, suppliers, storeName),
       attachments,
     });
 
