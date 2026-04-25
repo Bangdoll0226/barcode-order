@@ -156,6 +156,34 @@
     storage.addOrderLine({ barcode: "1", name: "x", supplier: "Amazon" });
     assertEq(storage.isSupplierInUse("Amazon"), true, "supplier in use: by order line");
 
+    // --- stores ---
+    clearStorage();
+    assertEq(storage.getStores(), [], "stores: empty by default");
+    assertEq(storage.getCurrentStore(), null, "stores: currentStore null by default");
+
+    storage.addStore({ name: "A店" });
+    storage.addStore({ name: "B店" });
+    assertEq(storage.getStores().map(s => s.name), ["A店", "B店"], "stores: addStore appends");
+
+    let storeThrew = false;
+    try { storage.addStore({ name: "A店" }); } catch { storeThrew = true; }
+    assertEq(storeThrew, true, "stores: addStore throws on duplicate name");
+
+    storage.updateStore("B店", { name: "C店" });
+    assertEq(storage.getStores().map(s => s.name), ["A店", "C店"], "stores: updateStore renames");
+
+    storage.moveStore("C店", -1);
+    assertEq(storage.getStores().map(s => s.name), ["C店", "A店"], "stores: moveStore up");
+
+    storage.removeStore("C店");
+    assertEq(storage.getStores().map(s => s.name), ["A店"], "stores: removeStore");
+
+    storage.setCurrentStore("A店");
+    assertEq(storage.getCurrentStore(), "A店", "stores: setCurrentStore + getCurrentStore");
+
+    storage.setCurrentStore(null);
+    assertEq(storage.getCurrentStore(), null, "stores: setCurrentStore null clears");
+
     // --- csv ---
     const orderLines = [
       { id: "a", barcode: "1", name: "アルコール綿 100包", quantity: 3, supplier: "アスクル" },

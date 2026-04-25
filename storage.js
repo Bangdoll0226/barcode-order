@@ -5,6 +5,8 @@ const KEYS = {
   suppliers: "barcode-order:suppliers",
   order: "barcode-order:order",
   token: "barcode-order:gmail_token",
+  stores: "barcode-order:stores",
+  current_store: "barcode-order:current_store",
 };
 
 function readJson(key, fallback) {
@@ -148,4 +150,58 @@ export function isSupplierInUse(name) {
   const order = getOrder();
   if (order.some(l => l.supplier === name)) return true;
   return false;
+}
+
+// --- 店舗マスタ（[{name}]） ---
+export function getStores() {
+  return readJson(KEYS.stores, []);
+}
+
+export function addStore({ name }) {
+  const stores = getStores();
+  if (stores.some(s => s.name === name)) {
+    throw new Error(`店舗「${name}」は既に存在します`);
+  }
+  stores.push({ name });
+  writeJson(KEYS.stores, stores);
+}
+
+export function updateStore(oldName, { name }) {
+  const stores = getStores();
+  const idx = stores.findIndex(s => s.name === oldName);
+  if (idx === -1) throw new Error(`店舗「${oldName}」が見つかりません`);
+  if (name !== oldName && stores.some(s => s.name === name)) {
+    throw new Error(`店舗「${name}」は既に存在します`);
+  }
+  stores[idx] = { name };
+  writeJson(KEYS.stores, stores);
+}
+
+export function removeStore(name) {
+  const stores = getStores().filter(s => s.name !== name);
+  writeJson(KEYS.stores, stores);
+}
+
+export function moveStore(name, delta) {
+  const stores = getStores();
+  const idx = stores.findIndex(s => s.name === name);
+  if (idx === -1) return;
+  const newIdx = Math.max(0, Math.min(stores.length - 1, idx + delta));
+  if (newIdx === idx) return;
+  const [item] = stores.splice(idx, 1);
+  stores.splice(newIdx, 0, item);
+  writeJson(KEYS.stores, stores);
+}
+
+// --- 現在選択中の店舗 ---
+export function getCurrentStore() {
+  return readJson(KEYS.current_store, null);
+}
+
+export function setCurrentStore(name) {
+  if (name === null || name === undefined) {
+    localStorage.removeItem(KEYS.current_store);
+    return;
+  }
+  writeJson(KEYS.current_store, name);
 }
