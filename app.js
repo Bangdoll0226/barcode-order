@@ -399,6 +399,14 @@ function toggleSupplierMaster() {
   if (!sec.hidden) renderSupplierMaster();
 }
 
+// --- 店舗ヘッダー ---
+
+function renderStoreHeader() {
+  const btn = document.getElementById("store-display");
+  const current = storage.getCurrentStore();
+  btn.textContent = current ? `🏪 ${current}` : "🏪 店舗未設定";
+}
+
 // --- 認証 UI ---
 
 function renderAuthStatus() {
@@ -544,6 +552,7 @@ function wireActions() {
 
 function init() {
   wireActions();
+  renderStoreHeader();
   renderAuthStatus();
   renderOrderList();
 }
