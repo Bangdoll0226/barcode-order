@@ -477,6 +477,46 @@ function openStoreSelectionModal({ required = false } = {}) {
   }, { closeOnBackdrop: !required });
 }
 
+function openStoreSwitchModal() {
+  const stores = storage.getStores();
+  const current = storage.getCurrentStore();
+
+  if (stores.length === 0) {
+    // store master が空（通常起きない）→ 強制モーダルへ
+    openStoreSelectionModal({ required: true });
+    return;
+  }
+
+  const radios = stores.map(s =>
+    `<label><input type="radio" name="store-switch" value="${encodeURIComponent(s.name)}" ${s.name === current ? "checked" : ""}> ${s.name}</label>`
+  ).join("");
+
+  openModal(`
+    <h3>店舗を切り替え</h3>
+    <div class="radio-group">${radios}</div>
+    <div class="buttons">
+      <button type="button" data-act="cancel">キャンセル</button>
+      <button type="button" class="primary" data-act="ok">切り替える</button>
+    </div>
+  `, (modal, close) => {
+    modal.querySelector('[data-act="cancel"]').addEventListener("click", close);
+    modal.querySelector('[data-act="ok"]').addEventListener("click", () => {
+      const radio = modal.querySelector('input[name="store-switch"]:checked');
+      if (!radio) return;
+      const name = decodeURIComponent(radio.value);
+      if (name === current) { close(); return; }
+      const orderHasItems = storage.getOrder().length > 0;
+      if (orderHasItems) {
+        if (!confirm("店舗を変更すると現在の発注リストはそのまま残ります。よろしいですか？")) return;
+      }
+      storage.setCurrentStore(name);
+      close();
+      renderStoreHeader();
+      showToast(`店舗を「${name}」に切り替えました`);
+    });
+  });
+}
+
 // --- 認証 UI ---
 
 function renderAuthStatus() {
@@ -618,6 +658,7 @@ function wireActions() {
     showToast("ログアウトしました");
   });
   document.getElementById("send-email-btn").addEventListener("click", handleSendEmail);
+  document.getElementById("store-display").addEventListener("click", openStoreSwitchModal);
 }
 
 function init() {
