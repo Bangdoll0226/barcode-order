@@ -517,6 +517,74 @@ function openStoreSwitchModal() {
   });
 }
 
+function renderStoreMaster() {
+  const listEl = document.getElementById("store-master-list");
+  const stores = storage.getStores();
+  const current = storage.getCurrentStore();
+
+  listEl.innerHTML = "";
+  stores.forEach((s) => {
+    const row = document.createElement("div");
+    row.className = "master-line";
+    row.innerHTML = `
+      <div>
+        <input data-field="name" type="text" />
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button type="button" data-act="up">↑</button>
+        <button type="button" data-act="down">↓</button>
+      </div>
+      <button type="button" data-act="del">削除</button>
+    `;
+    const nameInput = row.querySelector('[data-field="name"]');
+    nameInput.value = s.name;
+
+    nameInput.addEventListener("change", () => {
+      const newName = nameInput.value.trim();
+      if (!newName) {
+        showToast("店舗名は必須です");
+        nameInput.value = s.name;
+        return;
+      }
+      try {
+        storage.updateStore(s.name, { name: newName });
+        // 現在選択中の店舗名が変わった場合は current_store も追従
+        if (current === s.name) storage.setCurrentStore(newName);
+        renderStoreMaster();
+        renderStoreHeader();
+      } catch (e) {
+        showToast(e.message);
+        nameInput.value = s.name;
+      }
+    });
+
+    row.querySelector('[data-act="up"]').addEventListener("click", () => {
+      storage.moveStore(s.name, -1);
+      renderStoreMaster();
+    });
+    row.querySelector('[data-act="down"]').addEventListener("click", () => {
+      storage.moveStore(s.name, +1);
+      renderStoreMaster();
+    });
+    row.querySelector('[data-act="del"]').addEventListener("click", () => {
+      if (s.name === current) {
+        showToast("現在使用中の店舗のため削除できません。先に他の店舗に切り替えてください");
+        return;
+      }
+      if (!confirm(`店舗「${s.name}」を削除しますか？`)) return;
+      storage.removeStore(s.name);
+      renderStoreMaster();
+    });
+    listEl.appendChild(row);
+  });
+}
+
+function toggleStoreMaster() {
+  const sec = document.getElementById("store-master");
+  sec.hidden = !sec.hidden;
+  if (!sec.hidden) renderStoreMaster();
+}
+
 // --- 認証 UI ---
 
 function renderAuthStatus() {
@@ -659,6 +727,21 @@ function wireActions() {
   });
   document.getElementById("send-email-btn").addEventListener("click", handleSendEmail);
   document.getElementById("store-display").addEventListener("click", openStoreSwitchModal);
+
+  document.getElementById("manage-stores-btn").addEventListener("click", toggleStoreMaster);
+
+  document.getElementById("add-store-btn").addEventListener("click", () => {
+    const nameEl = document.getElementById("new-store-name");
+    const name = nameEl.value.trim();
+    if (!name) { showToast("店舗名を入力してください"); return; }
+    try {
+      storage.addStore({ name });
+      nameEl.value = "";
+      renderStoreMaster();
+    } catch (e) {
+      showToast(e.message);
+    }
+  });
 }
 
 function init() {
