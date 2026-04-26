@@ -94,3 +94,32 @@ cp config.sample.js config.js
 | `config.js` | OAuth クライアントID（.gitignore 対象） |
 | `config.sample.js` | OAuth 設定のひな形 |
 | `manifest.json` | PWA 設定 |
+| `supplier-sites.json` | Claude 連携用：発注先名 → サイト URL マッピング |
+
+## 発注カート自動投入（Claude 連携）
+
+このアプリが Gmail に送った発注メールを起点に、Claude が Chrome を直接操作して各発注先サイトのカートに商品を投入する仕組みを用意している。決済ボタンはユーザーが手動で押す。
+
+### 仕組み
+
+- Claude Code から `/order` を実行（または「発注やって」等の自然言語で発火）
+- Claude が Gmail から最新の発注メールを取得 → 添付 CSV をパース
+- `supplier-sites.json` の発注先 → サイト URL マッピングをもとに、各発注先サイトを新規タブで開く
+- JAN コード検索 → 品名フォールバックの順で商品を特定し、数量を設定してカートに追加
+- 判別不能な商品はスキップしてレポート記録
+- 全発注先処理後、各タブはカート画面で停止し、ユーザーが決済ボタンを押す
+
+### 必要なもの
+
+- Chrome に [Claude for Chrome](https://www.anthropic.com/claude-for-chrome) 拡張がインストール済み
+- Gmail MCP が Claude Code から接続できる状態
+- 各発注先サイトにあらかじめログイン済み
+
+### マッピングファイル
+
+`supplier-sites.json` に発注先名 → サイト URL を保持。barcode-order の発注先マスタとは別管理（手動で同期）。未知の発注先は実行時に Claude が確認して追記する。
+
+### 設計・実装計画
+
+- 設計: `docs/superpowers/specs/2026-04-26-cart-automation-design.md`
+- 実装計画: `docs/superpowers/plans/2026-04-26-cart-automation.md`
