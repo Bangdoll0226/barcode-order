@@ -184,6 +184,53 @@
     storage.setCurrentStore(null);
     assertEq(storage.getCurrentStore(), null, "stores: setCurrentStore null clears");
 
+    // --- history ---
+    clearStorage();
+    assertEq(storage.getHistory("A店"), [], "history: empty by default");
+
+    storage.addHistoryEntry({
+      store: "A店",
+      lines: [
+        { barcode: "1", name: "x", quantity: 2, supplier: "アスクル" },
+      ],
+    });
+    const h1 = storage.getHistory("A店");
+    assertEq(h1.length, 1, "history: addHistoryEntry adds one");
+    assertEq(h1[0].store, "A店", "history: entry has store");
+    assertEq(h1[0].lines.length, 1, "history: entry has lines");
+    assertEq(typeof h1[0].id, "string", "history: entry has id");
+    assertEq(typeof h1[0].sentAt, "string", "history: entry has sentAt");
+
+    // 別店舗のエントリは分離される
+    storage.addHistoryEntry({ store: "B店", lines: [{ barcode: "2", name: "y", quantity: 1, supplier: "Amazon" }] });
+    assertEq(storage.getHistory("A店").length, 1, "history: B店 add does not affect A店");
+    assertEq(storage.getHistory("B店").length, 1, "history: B店 has its own entry");
+
+    // 11件追加で最古が消える
+    clearStorage();
+    for (let i = 0; i < 12; i++) {
+      storage.addHistoryEntry({
+        store: "A店",
+        lines: [{ barcode: String(i), name: `item${i}`, quantity: 1, supplier: "アスクル" }],
+      });
+    }
+    const h2 = storage.getHistory("A店");
+    assertEq(h2.length, 10, "history: cap at 10 per store");
+    // 新しい順なので h2[0] は最新（item11）、h2[9] は item2（item0/item1 が消える）
+    assertEq(h2[0].lines[0].name, "item11", "history: newest first (item11)");
+    assertEq(h2[9].lines[0].name, "item2", "history: oldest kept is item2");
+
+    // 別店舗の上限は独立
+    clearStorage();
+    for (let i = 0; i < 11; i++) {
+      storage.addHistoryEntry({ store: "A店", lines: [{ barcode: String(i), name: `a${i}`, quantity: 1, supplier: "アスクル" }] });
+    }
+    storage.addHistoryEntry({ store: "B店", lines: [{ barcode: "x", name: "bx", quantity: 1, supplier: "Amazon" }] });
+    storage.addHistoryEntry({ store: "B店", lines: [{ barcode: "y", name: "by", quantity: 1, supplier: "Amazon" }] });
+    storage.addHistoryEntry({ store: "B店", lines: [{ barcode: "z", name: "bz", quantity: 1, supplier: "Amazon" }] });
+    assertEq(storage.getHistory("A店").length, 10, "history: A店 still capped at 10");
+    assertEq(storage.getHistory("B店").length, 3, "history: B店 has 3 (independent cap)");
+
     // --- csv ---
     const orderLines = [
       { id: "a", barcode: "1", name: "アルコール綿 100包", quantity: 3, supplier: "アスクル" },

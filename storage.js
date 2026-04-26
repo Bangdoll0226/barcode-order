@@ -7,6 +7,7 @@ const KEYS = {
   token: "barcode-order:gmail_token",
   stores: "barcode-order:stores",
   current_store: "barcode-order:current_store",
+  history: "barcode-order:history",
 };
 
 function readJson(key, fallback) {
@@ -204,4 +205,37 @@ export function setCurrentStore(name) {
     return;
   }
   writeJson(KEYS.current_store, name);
+}
+
+// --- 発注履歴（[{id, sentAt, store, lines}]） ---
+const HISTORY_MAX_PER_STORE = 10;
+
+function getAllHistory() {
+  return readJson(KEYS.history, []);
+}
+
+export function addHistoryEntry({ store, lines }) {
+  const all = getAllHistory();
+  all.push({
+    id: newId(),
+    sentAt: new Date().toISOString(),
+    store,
+    lines,
+  });
+  // 該当店舗の件数が上限を超えたら、その店舗の最古エントリを削除
+  const sameStoreEntries = all
+    .filter(e => e.store === store)
+    .sort((a, b) => a.sentAt.localeCompare(b.sentAt));
+  while (sameStoreEntries.length > HISTORY_MAX_PER_STORE) {
+    const oldest = sameStoreEntries.shift();
+    const idx = all.findIndex(e => e.id === oldest.id);
+    if (idx !== -1) all.splice(idx, 1);
+  }
+  writeJson(KEYS.history, all);
+}
+
+export function getHistory(storeName) {
+  return getAllHistory()
+    .filter(e => e.store === storeName)
+    .sort((a, b) => b.sentAt.localeCompare(a.sentAt));
 }
