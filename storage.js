@@ -222,20 +222,22 @@ export function addHistoryEntry({ store, lines }) {
     store,
     lines,
   });
-  // 該当店舗の件数が上限を超えたら、その店舗の最古エントリを削除
-  const sameStoreEntries = all
-    .filter(e => e.store === store)
-    .sort((a, b) => a.sentAt.localeCompare(b.sentAt));
-  while (sameStoreEntries.length > HISTORY_MAX_PER_STORE) {
-    const oldest = sameStoreEntries.shift();
-    const idx = all.findIndex(e => e.id === oldest.id);
-    if (idx !== -1) all.splice(idx, 1);
+  // 該当店舗の件数が上限を超えたら、最古（= 配列で最初に出てくる該当店舗エントリ）を削除。
+  // sentAt のミリ秒精度では同時刻の連続追加で順序が崩れるため、配列の挿入順を真として扱う。
+  const sameStoreCount = all.filter(e => e.store === store).length;
+  let toRemove = sameStoreCount - HISTORY_MAX_PER_STORE;
+  while (toRemove > 0) {
+    const idx = all.findIndex(e => e.store === store);
+    if (idx === -1) break;
+    all.splice(idx, 1);
+    toRemove--;
   }
   writeJson(KEYS.history, all);
 }
 
 export function getHistory(storeName) {
+  // 配列の挿入順を真として、新しい順に返す
   return getAllHistory()
     .filter(e => e.store === storeName)
-    .sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+    .reverse();
 }
