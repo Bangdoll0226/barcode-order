@@ -677,6 +677,21 @@ async function handleSendEmail() {
       attachments,
     });
 
+    // 履歴に保存（id/addedAt は省略）
+    try {
+      storage.addHistoryEntry({
+        store: storeName,
+        lines: order.map(l => ({
+          barcode: l.barcode,
+          name: l.name,
+          quantity: l.quantity,
+          supplier: l.supplier,
+        })),
+      });
+    } catch (e) {
+      showToast("履歴の保存に失敗しました");
+    }
+
     storage.clearOrder();
     renderOrderList();
     showToast("メールを送信しました。発注リストをクリアしました");
