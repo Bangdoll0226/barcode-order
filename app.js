@@ -616,7 +616,85 @@ function formatSentAt(iso) {
 }
 
 function openHistoryDetailModal(entry) {
-  showToast(`詳細表示は次のタスクで実装します（${entry.lines.length}件）`);
+  const grouped = csv.groupBySupplier(entry.lines);
+  const sections = Object.entries(grouped).map(([supplierName, lines]) => {
+    const items = lines.map(l =>
+      `<li>${escapeHtml(l.name)} × ${l.quantity}</li>`
+    ).join("");
+    return `
+      <h4 style="margin: 8px 0 4px;">■ ${escapeHtml(supplierName)}（${lines.length}件）</h4>
+      <ul style="margin: 0 0 8px 16px; padding: 0;">${items}</ul>
+    `;
+  }).join("");
+
+  openModal(`
+    <h3>発注詳細</h3>
+    <p style="font-size: 12px; color: #555;">🕓 ${formatSentAt(entry.sentAt)}  🏪 ${escapeHtml(entry.store)}</p>
+    <div>${sections}</div>
+    <div class="buttons">
+      <button type="button" data-act="close">閉じる</button>
+      <button type="button" class="primary" data-act="restore">このリストを復元</button>
+    </div>
+  `, (modal, close) => {
+    modal.querySelector('[data-act="close"]').addEventListener("click", close);
+    modal.querySelector('[data-act="restore"]').addEventListener("click", () => {
+      close();
+      openRestoreModeDialog(entry);
+    });
+  });
+}
+
+function openRestoreModeDialog(entry) {
+  openModal(`
+    <h3>どう復元しますか？</h3>
+    <ul style="font-size: 13px; padding-left: 20px; margin: 8px 0;">
+      <li><strong>上書き</strong>: 現在のリストを破棄して履歴の内容に置き換え</li>
+      <li><strong>追加</strong>: 現在のリストに履歴を追加（同じ商品は数量を合算）</li>
+    </ul>
+    <div class="buttons">
+      <button type="button" data-act="cancel">キャンセル</button>
+      <button type="button" data-act="append">追加</button>
+      <button type="button" class="primary" data-act="overwrite">上書き</button>
+    </div>
+  `, (modal, close) => {
+    modal.querySelector('[data-act="cancel"]').addEventListener("click", close);
+    modal.querySelector('[data-act="append"]').addEventListener("click", () => {
+      restoreHistoryEntry(entry, "append");
+      close();
+    });
+    modal.querySelector('[data-act="overwrite"]').addEventListener("click", () => {
+      restoreHistoryEntry(entry, "overwrite");
+      close();
+    });
+  });
+}
+
+function restoreHistoryEntry(entry, mode) {
+  if (mode === "overwrite") {
+    storage.clearOrder();
+  }
+  for (const line of entry.lines) {
+    const existing = storage.findLineByBarcode(line.barcode);
+    if (existing) {
+      // 同じ JAN が現在のリストにある（追加モードでのみ起こる）→ 数量を加算
+      for (let i = 0; i < line.quantity; i++) {
+        storage.incrementQuantity(line.barcode);
+      }
+    } else {
+      // 新規追加 → addOrderLine（quantity=1で初期化）→ 残りを incrementQuantity
+      storage.addOrderLine({
+        barcode: line.barcode,
+        name: line.name,
+        supplier: line.supplier,
+      });
+      for (let i = 0; i < line.quantity - 1; i++) {
+        storage.incrementQuantity(line.barcode);
+      }
+    }
+  }
+  renderOrderList();
+  const verb = mode === "overwrite" ? "復元" : "追加";
+  showToast(`履歴を${verb}しました（${entry.lines.length}件）`);
 }
 
 function openHistoryListModal() {
