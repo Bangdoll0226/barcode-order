@@ -603,6 +603,72 @@ function renderAuthStatus() {
   }
 }
 
+// --- 発注履歴 ---
+
+function formatSentAt(iso) {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${y}-${mo}-${dd} ${h}:${mi}`;
+}
+
+function openHistoryDetailModal(entry) {
+  showToast(`詳細表示は次のタスクで実装します（${entry.lines.length}件）`);
+}
+
+function openHistoryListModal() {
+  const storeName = storage.getCurrentStore();
+  if (!storeName) {
+    showToast("店舗が選択されていません");
+    return;
+  }
+  const entries = storage.getHistory(storeName);
+
+  let bodyHtml;
+  if (entries.length === 0) {
+    bodyHtml = `
+      <h3>発注履歴（${escapeHtml(storeName)}）</h3>
+      <p class="empty">まだ履歴がありません</p>
+      <div class="buttons">
+        <button type="button" data-act="close">閉じる</button>
+      </div>
+    `;
+  } else {
+    const rows = entries.map((e, i) => `
+      <div class="master-line">
+        <div>
+          <div style="font-weight: 600;">🕓 ${formatSentAt(e.sentAt)}</div>
+          <div style="font-size: 12px; color: #777;">合計 ${e.lines.length}件</div>
+        </div>
+        <div></div>
+        <button type="button" class="primary" data-act="detail" data-idx="${i}">詳細</button>
+      </div>
+    `).join("");
+    bodyHtml = `
+      <h3>発注履歴（${escapeHtml(storeName)}）</h3>
+      <div>${rows}</div>
+      <div class="buttons">
+        <button type="button" data-act="close">閉じる</button>
+      </div>
+    `;
+  }
+
+  openModal(bodyHtml, (modal, close) => {
+    modal.querySelector('[data-act="close"]').addEventListener("click", close);
+    modal.querySelectorAll('[data-act="detail"]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.getAttribute("data-idx"), 10);
+        const entry = entries[idx];
+        close();
+        openHistoryDetailModal(entry);
+      });
+    });
+  });
+}
+
 // --- メール送信 ---
 
 function buildEmailHtml(groupedOrder, suppliers, storeName) {
@@ -763,6 +829,7 @@ function wireActions() {
       showToast(e.message);
     }
   });
+  document.getElementById("show-history-btn").addEventListener("click", openHistoryListModal);
 }
 
 function init() {
