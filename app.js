@@ -3,6 +3,7 @@
 import * as storage from "./storage.js";
 import * as csv from "./csv.js";
 import * as gmail from "./gmail.js";
+import { RECIPIENT_EMAIL } from "./config.js";
 
 function renderOrderList() {
   const listEl = document.getElementById("order-list");
@@ -805,6 +806,11 @@ async function handleSendEmail() {
     const token = gmail.getToken();
     if (!token?.email) throw new Error("送信元メールアドレスが取得できません");
 
+    // 送信先: config の RECIPIENT_EMAIL が設定されていればそちら、空なら自分宛にフォールバック
+    const recipient = RECIPIENT_EMAIL && RECIPIENT_EMAIL.trim() !== ""
+      ? RECIPIENT_EMAIL
+      : token.email;
+
     const grouped = csv.groupBySupplier(order);
     const suppliers = storage.getSuppliers();
     const now = new Date();
@@ -815,7 +821,7 @@ async function handleSendEmail() {
     }));
 
     await gmail.sendMail({
-      to: token.email,
+      to: recipient,
       subject: buildSubject(now, storeName),
       htmlBody: buildEmailHtml(grouped, suppliers, storeName),
       attachments,
