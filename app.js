@@ -116,6 +116,24 @@ function showToast(msg, ms = 2500) {
   setTimeout(() => { el.hidden = true; }, ms);
 }
 
+// PWA / iOS standalone モードでは window.confirm() が動かないことがあるため、
+// 自前のモーダルで確認ダイアログを実装する。
+function openConfirmModal({ message, confirmLabel = "OK", cancelLabel = "キャンセル", onConfirm }) {
+  openModal(`
+    <p style="margin: 0 0 12px; white-space: pre-wrap;">${escapeHtml(message)}</p>
+    <div class="buttons">
+      <button type="button" data-act="cancel">${escapeHtml(cancelLabel)}</button>
+      <button type="button" class="primary" data-act="ok">${escapeHtml(confirmLabel)}</button>
+    </div>
+  `, (modal, close) => {
+    modal.querySelector('[data-act="cancel"]').addEventListener("click", close);
+    modal.querySelector('[data-act="ok"]').addEventListener("click", () => {
+      close();
+      onConfirm();
+    });
+  });
+}
+
 // --- 手動 JAN 入力 ---
 
 function openManualBarcodeModal() {
@@ -297,10 +315,14 @@ function renderProductMaster() {
       storage.saveProduct(jan, { ...p, defaultSupplier: e.target.value });
     });
     row.querySelector('[data-act="del"]').addEventListener("click", () => {
-      if (confirm(`「${p.name}」を商品マスタから削除しますか？`)) {
-        storage.deleteProduct(jan);
-        renderProductMaster();
-      }
+      openConfirmModal({
+        message: `「${p.name}」を商品マスタから削除しますか？`,
+        confirmLabel: "削除",
+        onConfirm: () => {
+          storage.deleteProduct(jan);
+          renderProductMaster();
+        },
+      });
     });
     listEl.appendChild(row);
   }
@@ -373,9 +395,14 @@ function renderSupplierMaster() {
         showToast(`「${s.name}」は商品マスタ or 発注リストで使用中のため削除できません`);
         return;
       }
-      if (!confirm(`発注先「${s.name}」を削除しますか？`)) return;
-      storage.removeSupplier(s.name);
-      renderSupplierMaster();
+      openConfirmModal({
+        message: `発注先「${s.name}」を削除しますか？`,
+        confirmLabel: "削除",
+        onConfirm: () => {
+          storage.removeSupplier(s.name);
+          renderSupplierMaster();
+        },
+      });
     });
     listEl.appendChild(row);
   });
@@ -506,14 +533,23 @@ function openStoreSwitchModal() {
       if (!radio) return;
       const name = decodeURIComponent(radio.value);
       if (name === current) { close(); return; }
-      const orderHasItems = storage.getOrder().length > 0;
-      if (orderHasItems) {
-        if (!confirm("店舗を変更すると現在の発注リストはそのまま残ります。よろしいですか？")) return;
+      const finalize = () => {
+        storage.setCurrentStore(name);
+        renderStoreHeader();
+        showToast(`店舗を「${name}」に切り替えました`);
+      };
+      if (storage.getOrder().length > 0) {
+        // 確認モーダルを開く前に切替モーダルを閉じる（modal-root を共有しているため）
+        close();
+        openConfirmModal({
+          message: "店舗を変更すると現在の発注リストはそのまま残ります。よろしいですか？",
+          confirmLabel: "切り替える",
+          onConfirm: finalize,
+        });
+      } else {
+        close();
+        finalize();
       }
-      storage.setCurrentStore(name);
-      close();
-      renderStoreHeader();
-      showToast(`店舗を「${name}」に切り替えました`);
     });
   });
 }
@@ -572,9 +608,14 @@ function renderStoreMaster() {
         showToast("現在使用中の店舗のため削除できません。先に他の店舗に切り替えてください");
         return;
       }
-      if (!confirm(`店舗「${s.name}」を削除しますか？`)) return;
-      storage.removeStore(s.name);
-      renderStoreMaster();
+      openConfirmModal({
+        message: `店舗「${s.name}」を削除しますか？`,
+        confirmLabel: "削除",
+        onConfirm: () => {
+          storage.removeStore(s.name);
+          renderStoreMaster();
+        },
+      });
     });
     listEl.appendChild(row);
   });
@@ -853,10 +894,14 @@ async function handleSendEmail() {
 function wireActions() {
   document.getElementById("clear-order-btn").addEventListener("click", () => {
     if (storage.getOrder().length === 0) return;
-    if (confirm("発注リストをすべてクリアしますか？")) {
-      storage.clearOrder();
-      renderOrderList();
-    }
+    openConfirmModal({
+      message: "発注リストをすべてクリアしますか？",
+      confirmLabel: "クリア",
+      onConfirm: () => {
+        storage.clearOrder();
+        renderOrderList();
+      },
+    });
   });
   document.getElementById("scan-manual-btn").addEventListener("click", openManualBarcodeModal);
   document.getElementById("scan-start-btn").addEventListener("click", async () => {
