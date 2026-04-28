@@ -78,6 +78,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   border-bottom: 1px solid #eee;
   align-items: center;
 }
+/* 商品マスタは「品名/JAN | 発注先 | 発注 | 削除」の4列。 */
+#product-master .master-line {
+  grid-template-columns: 1fr auto auto auto;
+}
 .supplier-add-form { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .supplier-add-form input { flex: 1; min-width: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
 

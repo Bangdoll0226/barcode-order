@@ -299,6 +299,7 @@ function renderProductMaster() {
         <div style="font-size: 11px; color: #777;"></div>
       </div>
       <select></select>
+      <button type="button" class="primary" data-act="order">発注</button>
       <button type="button" data-act="del">削除</button>
     `;
     row.children[0].children[0].textContent = p.name;
@@ -313,6 +314,9 @@ function renderProductMaster() {
     }
     sel.addEventListener("change", e => {
       storage.saveProduct(jan, { ...p, defaultSupplier: e.target.value });
+    });
+    row.querySelector('[data-act="order"]').addEventListener("click", () => {
+      handleScannedBarcode(jan);
     });
     row.querySelector('[data-act="del"]').addEventListener("click", () => {
       openConfirmModal({
