@@ -5,4 +5,4 @@ export const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxbwz8m0
 export const GAS_SHARED_SECRET = "6ZHGKCbMRxH3bdppEvfNzQaT0v9NRr0eG";
 
 // 発注メールの送信先アドレス。
-export const RECIPIENT_EMAIL = "sunrise_hayakawa@aqua.ocn.ne.jp";
+export const RECIPIENT_EMAIL = "bangdoll7077@gmail.com";
