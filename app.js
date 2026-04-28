@@ -661,7 +661,7 @@ function openHistoryDetailModal(entry) {
   const grouped = csv.groupBySupplier(entry.lines);
   const sections = Object.entries(grouped).map(([supplierName, lines]) => {
     const items = lines.map(l =>
-      `<li>${escapeHtml(l.name)} × ${l.quantity}</li>`
+      `<li>${escapeHtml(l.name)}<span style="color:#666;font-size:0.9em;"> (JAN: ${escapeHtml(l.barcode)})</span> × ${l.quantity}</li>`
     ).join("");
     return `
       <h4 style="margin: 8px 0 4px;">■ ${escapeHtml(supplierName)}（${lines.length}件）</h4>
@@ -796,7 +796,7 @@ function buildEmailHtml(groupedOrder, suppliers, storeName) {
   const sections = Object.entries(groupedOrder).map(([supplierName, lines]) => {
     const s = supplierIndex[supplierName] || { name: supplierName, url: "" };
     const items = lines.map(l =>
-      `<li>${escapeHtml(l.name)} × ${l.quantity}</li>`
+      `<li>${escapeHtml(l.name)}<span style="color:#666;font-size:0.9em;"> (JAN: ${escapeHtml(l.barcode)})</span> × ${l.quantity}</li>`
     ).join("");
     const link = s.url
       ? `<p><a href="${escapeHtml(s.url)}">${escapeHtml(s.name)}で発注</a></p>`
