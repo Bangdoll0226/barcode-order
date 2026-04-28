@@ -8,7 +8,8 @@
 - 商品マスタ（JAN → 品名・発注先）の自動引き当て
 - 発注先マスタの追加・編集・並び替え・削除（使用中は削除不可）
 - 同じ商品を連続スキャンで数量 +1
-- Gmail API で自分宛にメール送信（発注先ごとの CSV を添付、本文に発注サイトへのリンク）
+- GAS Web App 経由で固定アドレスにメール送信（発注先ごとの CSV を添付、本文に発注サイトへのリンク）
+- スタッフ側は Google ログイン不要（管理者がデプロイした GAS のアカウントから送信される）
 - データはブラウザの localStorage に保存（サーバー不要）
 
 ## 開発サーバーの起動
@@ -20,57 +21,56 @@ python3 -m http.server 8000
 
 `http://localhost:8000/` にアクセス。
 
-## セットアップ手順（Google OAuth）
+## セットアップ手順（GAS Web App）
 
-Gmail 送信機能を使うには、Google Cloud Console で OAuth クライアントID を取得して `config.js` に設定する必要があります。以下の手順は初回のみ行います（所要時間 10-15 分）。
+メール送信は Google Apps Script (GAS) の Web App 経由で行います。スタッフ側は Google ログイン不要、管理者だけが一度 GAS をデプロイすれば全員が使えます。所要時間 5〜10 分。
 
-### 1. Google Cloud プロジェクトを作成
+### 1. Apps Script プロジェクトを作成
 
-1. https://console.cloud.google.com/ にアクセス
-2. プロジェクトを作成（プロジェクト名は任意、例: `barcode-order`）
+1. https://script.google.com/ にアクセス
+2. 「新しいプロジェクト」→ 既存の `Code.gs` の内容を全削除
+3. リポジトリの `gas/Code.gs` の中身を貼り付け
+4. `SHARED_SECRET` を任意の長いランダム文字列に変更（後でフロント側にも同じ値を入れる）
+5. プロジェクト名を分かりやすく変更（例: `barcode-order-mailer`）して保存
 
-### 2. Gmail API を有効化
+### 2. Web App としてデプロイ
 
-1. 左メニュー「APIとサービス」→「ライブラリ」
-2. 「Gmail API」を検索して有効化
+1. 右上「デプロイ」→「新しいデプロイ」
+2. 種類: **ウェブアプリ**
+3. 設定:
+   - 説明: `barcode-order v1`（任意）
+   - 次のユーザーとして実行: **自分**
+   - アクセスできるユーザー: **全員**
+4. 「デプロイ」→ 初回はGoogleアカウントの認可確認が出るので承認
+5. 表示された Web App URL（`https://script.google.com/macros/s/.../exec`）をコピー
 
-### 3. OAuth 同意画面を設定
-
-1. 「APIとサービス」→「OAuth 同意画面」
-2. ユーザータイプ: **外部** を選択
-3. アプリ名、サポートメール等を入力（自分のメールでOK）
-4. スコープは特に追加不要（次ステップで必要分を指定）
-5. テストユーザーに自分のメールアドレスを追加
-6. 公開ステータスは「テスト」のまま（本人だけが使えれば十分）
-
-### 4. OAuth クライアントID を作成
-
-1. 「APIとサービス」→「認証情報」→「＋ 認証情報を作成」→「OAuthクライアントID」
-2. アプリの種類: **ウェブアプリケーション**
-3. 承認済みの JavaScript 生成元:
-   - 開発時: `http://localhost:8000`
-   - 本番（例 GitHub Pages）: `https://<your-username>.github.io` も追加
-4. 作成後に表示されるクライアントID（`XXXXXXX.apps.googleusercontent.com`）をコピー
-
-### 5. `config.js` にクライアントID を設定
+### 3. `config.js` を設定
 
 ```bash
 cp config.sample.js config.js
-# エディタで config.js を開き、GOOGLE_OAUTH_CLIENT_ID に先ほどコピーした値を貼り付け
+# config.js をエディタで開いて以下を設定
+#   GAS_WEB_APP_URL    = 上でコピーした URL
+#   GAS_SHARED_SECRET  = Code.gs と同じ文字列
+#   RECIPIENT_EMAIL    = 発注メールの送信先
 ```
 
-### 6. 動作確認
+### 4. 動作確認
 
 1. 開発サーバーを再起動
-2. ブラウザでアクセス → 「ログイン」ボタン → Google アカウント選択 → 権限承認
-3. 発注リストに行を追加 → 「メール送信」 → 自分の Gmail に CSV 添付メールが届く
+2. 発注リストに行を追加 → 「メール送信」
+3. 設定した送信先に CSV 添付メールが届けばOK（送信元はあなたのGoogleアカウント）
+
+### コードを更新したとき
+
+GAS のコードを直したら「デプロイを管理」→ 該当デプロイの鉛筆アイコン → バージョン: 「新しいバージョン」→「デプロイ」。**URLは変わりません。**「新しいデプロイ」を選ぶとURLが変わってフロントが動かなくなるので注意。
 
 ## 本番デプロイ（GitHub Pages）
 
 1. リポジトリの Settings → Pages → Branch `main` / `/ (root)` を選択
 2. 発行された URL（例 `https://<user>.github.io/barcode-order/`）
-3. Google OAuth クライアントID の「承認済み JavaScript 生成元」にこの URL を追加
-4. スマホから `https://` URL にアクセスしてカメラが起動することを確認
+3. スマホから `https://` URL にアクセスしてカメラが起動することを確認
+
+GAS Web App は全員アクセス可なので、フロントの URL を OAuth 側で許可する設定は不要。
 
 ## データ削除
 
@@ -86,13 +86,14 @@ cp config.sample.js config.js
 | --- | --- |
 | `index.html` | メイン画面のマークアップ |
 | `styles.css` | スタイル |
-| `storage.js` | localStorage 操作（商品・発注先・発注リスト・OAuthトークン） |
+| `storage.js` | localStorage 操作（商品・発注先・発注リスト・店舗・履歴） |
 | `csv.js` | 発注先ごとの CSV 生成 |
-| `gmail.js` | Google OAuth と Gmail API 送信 |
+| `mailer.js` | GAS Web App への送信リクエスト |
 | `app.js` | DOM 操作・イベントハンドラ・モジュール連携 |
 | `test.html` | storage/csv の簡易テスト |
-| `config.js` | OAuth クライアントID（.gitignore 対象） |
-| `config.sample.js` | OAuth 設定のひな形 |
+| `config.js` | GAS Web App URL / 共有シークレット / 送信先 |
+| `config.sample.js` | config のひな形 |
+| `gas/Code.gs` | Apps Script に貼り付ける Web App 本体 |
 | `manifest.json` | PWA 設定 |
 | `supplier-sites.json` | Claude 連携用：発注先名 → サイト URL マッピング |
 

@@ -2,7 +2,7 @@
 
 import * as storage from "./storage.js";
 import * as csv from "./csv.js";
-import * as gmail from "./gmail.js";
+import * as mailer from "./mailer.js";
 import { RECIPIENT_EMAIL } from "./config.js";
 
 function renderOrderList() {
@@ -627,24 +627,6 @@ function toggleStoreMaster() {
   if (!sec.hidden) renderStoreMaster();
 }
 
-// --- 認証 UI ---
-
-function renderAuthStatus() {
-  const emailEl = document.getElementById("auth-email");
-  const signinBtn = document.getElementById("signin-btn");
-  const signoutBtn = document.getElementById("signout-btn");
-  const token = gmail.getToken();
-  if (gmail.isSignedIn()) {
-    emailEl.textContent = token.email || "ログイン中";
-    signinBtn.hidden = true;
-    signoutBtn.hidden = false;
-  } else {
-    emailEl.textContent = "未ログイン";
-    signinBtn.hidden = false;
-    signoutBtn.hidden = true;
-  }
-}
-
 // --- 発注履歴 ---
 
 function formatSentAt(iso) {
@@ -838,20 +820,14 @@ async function handleSendEmail() {
     return;
   }
 
+  // 送信先: config の RECIPIENT_EMAIL を使う。未設定なら送れない。
+  const recipient = RECIPIENT_EMAIL && RECIPIENT_EMAIL.trim() !== "" ? RECIPIENT_EMAIL : "";
+  if (!recipient) {
+    showToast("送信先メールアドレス (RECIPIENT_EMAIL) が設定されていません");
+    return;
+  }
+
   try {
-    if (!gmail.isSignedIn()) {
-      await gmail.signIn();
-      renderAuthStatus();
-    }
-
-    const token = gmail.getToken();
-    if (!token?.email) throw new Error("送信元メールアドレスが取得できません");
-
-    // 送信先: config の RECIPIENT_EMAIL が設定されていればそちら、空なら自分宛にフォールバック
-    const recipient = RECIPIENT_EMAIL && RECIPIENT_EMAIL.trim() !== ""
-      ? RECIPIENT_EMAIL
-      : token.email;
-
     const grouped = csv.groupBySupplier(order);
     const suppliers = storage.getSuppliers();
     const now = new Date();
@@ -861,7 +837,7 @@ async function handleSendEmail() {
       content: csv.generateCsv(lines),
     }));
 
-    await gmail.sendMail({
+    await mailer.sendMail({
       to: recipient,
       subject: buildSubject(now, storeName),
       htmlBody: buildEmailHtml(grouped, suppliers, storeName),
@@ -927,20 +903,6 @@ function wireActions() {
     }
   });
 
-  document.getElementById("signin-btn").addEventListener("click", async () => {
-    try {
-      await gmail.signIn();
-      renderAuthStatus();
-      showToast("ログインしました");
-    } catch (e) {
-      showToast(`ログイン失敗: ${e.message}`);
-    }
-  });
-  document.getElementById("signout-btn").addEventListener("click", () => {
-    gmail.signOut();
-    renderAuthStatus();
-    showToast("ログアウトしました");
-  });
   document.getElementById("send-email-btn").addEventListener("click", handleSendEmail);
   document.getElementById("store-display").addEventListener("click", openStoreSwitchModal);
 
@@ -964,7 +926,6 @@ function wireActions() {
 function init() {
   wireActions();
   renderStoreHeader();
-  renderAuthStatus();
   renderOrderList();
   if (storage.getCurrentStore() === null) {
     openStoreSelectionModal({ required: true });

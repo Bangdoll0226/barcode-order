@@ -4,11 +4,14 @@ const KEYS = {
   products: "barcode-order:products",
   suppliers: "barcode-order:suppliers",
   order: "barcode-order:order",
-  token: "barcode-order:gmail_token",
   stores: "barcode-order:stores",
   current_store: "barcode-order:current_store",
   history: "barcode-order:history",
 };
+
+// 旧版 (Gmail OAuth 直接送信) 用のトークンが残っていたら掃除する。
+// GAS Web App 方式では不要。
+try { localStorage.removeItem("barcode-order:gmail_token"); } catch {}
 
 function readJson(key, fallback) {
   const raw = localStorage.getItem(key);
