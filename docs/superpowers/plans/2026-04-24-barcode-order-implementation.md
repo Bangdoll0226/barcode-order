@@ -12,7 +12,7 @@
 
 ## ファイル構成
 
-作業ディレクトリ: `/Users/yo-chan/アプリ/barcode-order/`
+作業ディレクトリ: `/Users/yo-chan/claude/barcode-order/`
 
 | ファイル | 責務 |
 | --- | --- |
@@ -107,7 +107,7 @@ python3 -m http.server 8000
 `config.js` は `.gitignore` で除外されているため `git add` には含めない（実クライアントIDの誤公開を防ぐため）。ローカルには残しておき、開発中に使う。
 
 ```bash
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 git add .gitignore config.sample.js README.md
 git commit -m "chore: project scaffolding (gitignore, config sample, README skeleton)"
 ```
@@ -188,7 +188,7 @@ git commit -m "chore: project scaffolding (gitignore, config sample, README skel
 Run: 開発サーバー起動後、ブラウザで `http://localhost:8000/test.html` を開く
 
 ```bash
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 python3 -m http.server 8000
 ```
 
@@ -840,7 +840,7 @@ document.addEventListener("DOMContentLoaded", init);
 
 ```bash
 # まだ開発サーバーが動いていなければ起動
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 python3 -m http.server 8000
 ```
 

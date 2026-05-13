@@ -2,7 +2,7 @@
 
 - 作成日: 2026-04-24
 - 最終更新: 2026-04-24（発注先マスタ・Gmail送信を追加）
-- 対象ディレクトリ: `/Users/yo-chan/アプリ/barcode-order/`
+- 対象ディレクトリ: `/Users/yo-chan/claude/barcode-order/`
 
 ## 1. 概要
 

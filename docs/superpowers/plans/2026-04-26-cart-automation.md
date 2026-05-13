@@ -33,11 +33,11 @@
 ### Task 1: 発注先サイトマッピング JSON を作成
 
 **Files:**
-- Create: `/Users/yo-chan/アプリ/barcode-order/supplier-sites.json`
+- Create: `/Users/yo-chan/claude/barcode-order/supplier-sites.json`
 
 - [ ] **Step 1: JSON ファイルを作成**
 
-`/Users/yo-chan/アプリ/barcode-order/supplier-sites.json` に以下の内容を書く。barcode-order の `storage.js` `DEFAULT_SUPPLIERS` と同じ 4 件を初期登録する。
+`/Users/yo-chan/claude/barcode-order/supplier-sites.json` に以下の内容を書く。barcode-order の `storage.js` `DEFAULT_SUPPLIERS` と同じ 4 件を初期登録する。
 
 ```json
 {
@@ -52,14 +52,14 @@
 
 Run:
 ```bash
-python3 -c "import json; json.load(open('/Users/yo-chan/アプリ/barcode-order/supplier-sites.json'))" && echo OK
+python3 -c "import json; json.load(open('/Users/yo-chan/claude/barcode-order/supplier-sites.json'))" && echo OK
 ```
 Expected: `OK`
 
 - [ ] **Step 3: コミット**
 
 ```bash
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 git add supplier-sites.json
 git commit -m "feat: add supplier-sites.json for cart automation site mapping"
 ```
@@ -69,18 +69,18 @@ git commit -m "feat: add supplier-sites.json for cart automation site mapping"
 ### Task 2: `/order` skill を作成
 
 **Files:**
-- Create: `/Users/yo-chan/アプリ/.claude/skills/order/SKILL.md`
+- Create: `/Users/yo-chan/claude/.claude/skills/order/SKILL.md`
 
 - [ ] **Step 1: skill ディレクトリを作成**
 
 Run:
 ```bash
-mkdir -p /Users/yo-chan/アプリ/.claude/skills/order
+mkdir -p /Users/yo-chan/claude/.claude/skills/order
 ```
 
 - [ ] **Step 2: `SKILL.md` を作成**
 
-`/Users/yo-chan/アプリ/.claude/skills/order/SKILL.md` に以下を書く。frontmatter の `description` には自然言語トリガーフレーズを含める。
+`/Users/yo-chan/claude/.claude/skills/order/SKILL.md` に以下を書く。frontmatter の `description` には自然言語トリガーフレーズを含める。
 
 ````markdown
 ---
@@ -121,7 +121,7 @@ from:me 発注リスト has:attachment
 
 ### 3. 発注先 → サイト URL マッピング
 
-`/Users/yo-chan/アプリ/barcode-order/supplier-sites.json` を読み、発注先名から URL を引く。
+`/Users/yo-chan/claude/barcode-order/supplier-sites.json` を読み、発注先名から URL を引く。
 
 未知の発注先（JSON にない）に遭遇した場合:
 1. ユーザーに「『◯◯』のサイト URL を教えて」と確認。
@@ -243,7 +243,7 @@ Run:
 ```bash
 python3 -c "
 import re, sys
-with open('/Users/yo-chan/アプリ/.claude/skills/order/SKILL.md') as f:
+with open('/Users/yo-chan/claude/.claude/skills/order/SKILL.md') as f:
     content = f.read()
 m = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
 assert m, 'frontmatter not found'
@@ -257,11 +257,11 @@ Expected: `OK`
 
 - [ ] **Step 4: コミット**
 
-skill ディレクトリは `/Users/yo-chan/アプリ/` 直下の `.claude/` 配下なので、barcode-order リポジトリには含まれない。`/Users/yo-chan/アプリ/` が git リポジトリかどうかを確認:
+skill ディレクトリは `/Users/yo-chan/claude/` 直下の `.claude/` 配下なので、barcode-order リポジトリには含まれない。`/Users/yo-chan/claude/` が git リポジトリかどうかを確認:
 
 Run:
 ```bash
-cd /Users/yo-chan/アプリ && git rev-parse --is-inside-work-tree 2>&1
+cd /Users/yo-chan/claude && git rev-parse --is-inside-work-tree 2>&1
 ```
 
 - リポジトリでない場合（`fatal: not a git repository`）: コミットせず、ファイルだけ残す。後でユーザーが必要に応じて初期化する。
@@ -272,17 +272,17 @@ cd /Users/yo-chan/アプリ && git rev-parse --is-inside-work-tree 2>&1
 ### Task 3: README に発注カート自動投入セクションを追記
 
 **Files:**
-- Modify: `/Users/yo-chan/アプリ/barcode-order/README.md`（末尾に追記）
+- Modify: `/Users/yo-chan/claude/barcode-order/README.md`（末尾に追記）
 
 - [ ] **Step 1: 既存 README の末尾を確認**
 
-Read: `/Users/yo-chan/アプリ/barcode-order/README.md`
+Read: `/Users/yo-chan/claude/barcode-order/README.md`
 
 末尾のセクション（「ファイル構成」表）の直後に新セクションを追加する位置を確認する。
 
 - [ ] **Step 2: README 末尾に追記**
 
-`/Users/yo-chan/アプリ/barcode-order/README.md` の末尾に以下のセクションを追記する。
+`/Users/yo-chan/claude/barcode-order/README.md` の末尾に以下のセクションを追記する。
 
 ```markdown
 
@@ -318,7 +318,7 @@ Read: `/Users/yo-chan/アプリ/barcode-order/README.md`
 - [ ] **Step 3: コミット**
 
 ```bash
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 git add README.md
 git commit -m "docs: README section for cart automation feature"
 ```
@@ -338,9 +338,9 @@ git commit -m "docs: README section for cart automation feature"
 - [ ] **Step 2: 起動できなかった場合のトラブルシューティング**
 
 skill が認識されない場合、以下を確認:
-- `/Users/yo-chan/アプリ/.claude/skills/order/SKILL.md` のパスが正しい
+- `/Users/yo-chan/claude/.claude/skills/order/SKILL.md` のパスが正しい
 - frontmatter の `name:` と `description:` が両方ある
-- Claude Code が `/Users/yo-chan/アプリ/` で起動されている（このプロジェクトの skill は `.claude/skills/` に置かれているため）
+- Claude Code が `/Users/yo-chan/claude/` で起動されている（このプロジェクトの skill は `.claude/skills/` に置かれているため）
 
 該当が解消されたら再度起動確認。
 

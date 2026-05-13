@@ -39,7 +39,7 @@
 
 - [ ] **Step 1: `test.html` に履歴のテストを追加**
 
-`/Users/yo-chan/アプリ/barcode-order/test.html` の以下の行を見つける（store の最後の assertion）：
+`/Users/yo-chan/claude/barcode-order/test.html` の以下の行を見つける（store の最後の assertion）：
 
 ```javascript
     storage.setCurrentStore(null);
@@ -101,7 +101,7 @@
 
 開発サーバーを起動：
 ```bash
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 python3 -m http.server 8000 > /tmp/http.log 2>&1 &
 echo $! > /tmp/http.pid
 ```
@@ -111,7 +111,7 @@ Expected: `storage.getHistory is not a function` 等のエラーで FAIL。
 
 - [ ] **Step 3: `storage.js` の KEYS 定数を拡張**
 
-`/Users/yo-chan/アプリ/barcode-order/storage.js` の KEYS を：
+`/Users/yo-chan/claude/barcode-order/storage.js` の KEYS を：
 
 ```javascript
 const KEYS = {
@@ -140,7 +140,7 @@ const KEYS = {
 
 - [ ] **Step 4: `storage.js` の末尾に履歴関数を追記**
 
-`/Users/yo-chan/アプリ/barcode-order/storage.js` の末尾に追記：
+`/Users/yo-chan/claude/barcode-order/storage.js` の末尾に追記：
 
 ```javascript
 
@@ -183,7 +183,7 @@ export function getHistory(storeName) {
 - [ ] **Step 5: 構文チェック + テストパス確認**
 
 ```bash
-node --check /Users/yo-chan/アプリ/barcode-order/storage.js && echo "storage.js syntax OK"
+node --check /Users/yo-chan/claude/barcode-order/storage.js && echo "storage.js syntax OK"
 ```
 
 ブラウザで `test.html` をリロード。出力末尾に新しい件数が出て、すべて `0 failed`。
@@ -193,7 +193,7 @@ node --check /Users/yo-chan/アプリ/barcode-order/storage.js && echo "storage.
 ```bash
 if [ -f /tmp/http.pid ]; then kill $(cat /tmp/http.pid) 2>/dev/null; rm /tmp/http.pid; fi
 
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 git add storage.js test.html
 git commit -m "feat(storage): order history CRUD with per-store cap of 10"
 ```
@@ -207,7 +207,7 @@ git commit -m "feat(storage): order history CRUD with per-store cap of 10"
 
 - [ ] **Step 1: `handleSendEmail` を更新して送信成功時に履歴を保存**
 
-`/Users/yo-chan/アプリ/barcode-order/app.js` の既存の `handleSendEmail` 関数を：
+`/Users/yo-chan/claude/barcode-order/app.js` の既存の `handleSendEmail` 関数を：
 
 ```javascript
 async function handleSendEmail() {
@@ -319,13 +319,13 @@ async function handleSendEmail() {
 - [ ] **Step 2: 構文チェック**
 
 ```bash
-node --check /Users/yo-chan/アプリ/barcode-order/app.js && echo "app.js syntax OK"
+node --check /Users/yo-chan/claude/barcode-order/app.js && echo "app.js syntax OK"
 ```
 
 - [ ] **Step 3: コミット**
 
 ```bash
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 git add app.js
 git commit -m "feat(app): save order to history on successful email send"
 ```
@@ -340,7 +340,7 @@ git commit -m "feat(app): save order to history on successful email send"
 
 - [ ] **Step 1: `index.html` の操作エリアにボタン追加**
 
-`/Users/yo-chan/アプリ/barcode-order/index.html` の以下のセクションを：
+`/Users/yo-chan/claude/barcode-order/index.html` の以下のセクションを：
 
 ```html
     <section class="actions-section">
@@ -367,7 +367,7 @@ git commit -m "feat(app): save order to history on successful email send"
 
 - [ ] **Step 2: `app.js` に履歴一覧モーダル関数を追加**
 
-`/Users/yo-chan/アプリ/barcode-order/app.js` の `// --- メール送信 ---` コメントの**直前**（`renderAuthStatus` ブロックの後あたり）に、新セクションとして以下を挿入：
+`/Users/yo-chan/claude/barcode-order/app.js` の `// --- メール送信 ---` コメントの**直前**（`renderAuthStatus` ブロックの後あたり）に、新セクションとして以下を挿入：
 
 ```javascript
 
@@ -456,13 +456,13 @@ function openHistoryDetailModal(entry) {
 - [ ] **Step 5: 構文チェック**
 
 ```bash
-node --check /Users/yo-chan/アプリ/barcode-order/app.js && echo "app.js syntax OK"
+node --check /Users/yo-chan/claude/barcode-order/app.js && echo "app.js syntax OK"
 ```
 
 - [ ] **Step 6: コミット**
 
 ```bash
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 git add index.html app.js
 git commit -m "feat(app): order history list modal with empty/populated states"
 ```
@@ -476,7 +476,7 @@ git commit -m "feat(app): order history list modal with empty/populated states"
 
 - [ ] **Step 1: スタブの `openHistoryDetailModal` を本実装に置き換え**
 
-`/Users/yo-chan/アプリ/barcode-order/app.js` の Task 3 で作ったスタブ：
+`/Users/yo-chan/claude/barcode-order/app.js` の Task 3 で作ったスタブ：
 
 ```javascript
 function openHistoryDetailModal(entry) {
@@ -587,13 +587,13 @@ function restoreHistoryEntry(entry, mode) {
 - [ ] **Step 4: 構文チェック**
 
 ```bash
-node --check /Users/yo-chan/アプリ/barcode-order/app.js && echo "app.js syntax OK"
+node --check /Users/yo-chan/claude/barcode-order/app.js && echo "app.js syntax OK"
 ```
 
 - [ ] **Step 5: コミット**
 
 ```bash
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 git add app.js
 git commit -m "feat(app): history detail modal with overwrite/append restore"
 ```
@@ -608,7 +608,7 @@ git commit -m "feat(app): history detail modal with overwrite/append restore"
 - [ ] **Step 1: 全変更を push**
 
 ```bash
-cd /Users/yo-chan/アプリ/barcode-order
+cd /Users/yo-chan/claude/barcode-order
 git push
 ```
 
